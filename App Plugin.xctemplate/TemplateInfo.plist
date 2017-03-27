@@ -5,19 +5,18 @@
 	<key>Kind</key>
 	<string>Xcode.Xcode3.ProjectTemplateUnitKind</string>
 	<key>Identifier</key>
-	<string>com.corbin.pluginFramework-mac</string>
+	<string>com.corbin.pluginFramework</string>
 	<key>Concrete</key>
 	<true/>
 	<key>Description</key>
 	<string>This template builds a plugin framework that links against the Foundation and UIKit frameworks.</string>
 	<key>Platforms</key>
 	<array>
-		<string>com.apple.platform.macosx</string>
+		<string>com.apple.platform.iphoneos</string>
 	</array>
 	<key>Ancestors</key>
 	<array>
 		<string>com.apple.dt.unit.frameworkBase</string>
-		<string>com.apple.dt.unit.macBase</string>
 	</array>
 	<key>Project</key>
 	<dict>
@@ -35,7 +34,11 @@
 			<string>gnu99</string>
 			<key>EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES</key>
 			<string>*.nib *.lproj *.gch (*) .DS_Store CVS .svn .git .hg *.xcodeproj *.xcode *.pbproj *.pbxproj</string>
+			<key>IPHONEOS_DEPLOYMENT_TARGET</key>
+			<string>8.0</string>
 		</dict>
+		<key>SDK</key>
+		<string>iphoneos</string>
 		<key>Configurations</key>
 		<dict>
 			<key>Debug</key>
@@ -87,6 +90,8 @@
 				<string>YES</string>
 				<key>GCC_PREFIX_HEADER</key>
 				<string>___PACKAGENAME___/PrefixHeader.pch</string>
+				<key>CODE_SIGN_IDENTITY</key>
+				<string>iPhone Developer</string>
 			</dict>
 			<key>BuildPhases</key>
 			<array/>
@@ -102,10 +107,14 @@
 				<string>___PACKAGENAME___/Info.plist</string>
 				<key>PRODUCT_NAME</key>
 				<string>___VARIABLE_TargetAppName___</string>
+				<key>PRODUCT_BUNDLE_IDENTIFIER</key>
+				<string>___VARIABLE_TargetAppBundleId___</string>
 				<key>DEFINES_MODULE</key>
 				<string>YES</string>
 				<key>GCC_PRECOMPILE_PREFIX_HEADER</key>
 				<string>YES</string>
+				<key>CODE_SIGN_IDENTITY</key>
+				<string>iPhone Developer</string>
 			</dict>
 			<key>BuildPhases</key>
 			<array>
@@ -117,18 +126,36 @@
 					<key>ShowEnvVarsInLog</key>
 					<string>true</string>
 					<key>ShellScript</key>
-					<string>APP_NAME=&quot;___VARIABLE_TargetAppName___&quot;
-FRAMEWORK_NAME=&quot;___PACKAGENAME___&quot;
+					<string>APP_PATH=&quot;${PROJECT_DIR}/___VARIABLE_TargetAppName___.app&quot;
+FRAMEWORK_PATH=&quot;${BUILT_PRODUCTS_DIR}/___PACKAGENAME___.framework&quot;
+BUNDLE_IDENTIFIER=&quot;___VARIABLE_TargetAppBundleId___&quot;
 
-rm -rf &quot;${BUILT_PRODUCTS_DIR}/${APP_NAME}.app&quot;
-cp -r &quot;${PROJECT_DIR}/${APP_NAME}.app&quot; &quot;${BUILT_PRODUCTS_DIR}/&quot;
+APP_NAME=&quot;___VARIABLE_TargetAppName___.app&quot;
+APP_EXECUTABLE=&quot;___VARIABLE_TargetAppName___&quot;
 
-APP_BUNDLE_PATH=&quot;${BUILT_PRODUCTS_DIR}/${APP_NAME}.app/Contents/MacOS&quot;
-APP_EXECUTABLE_PATH=&quot;${APP_BUNDLE_PATH}/${APP_NAME}&quot;
+FRAMEWORK_NAME=$(basename &quot;$FRAMEWORK_PATH&quot;)
+FRAMEWORK_EXECUTABLE=&quot;${FRAMEWORK_NAME}/${FRAMEWORK_NAME%.*}&quot;
 
-cp -r &quot;${BUILT_PRODUCTS_DIR}/${FRAMEWORK_NAME}.framework&quot; ${APP_BUNDLE_PATH}
+INSERT_DYLIB_PATH=&quot;${PROJECT_DIR}/insert_dylib&quot;
 
-insert_dylib --all-yes &quot;@loader_path/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}&quot; &quot;$APP_EXECUTABLE_PATH&quot; &quot;$APP_EXECUTABLE_PATH&quot;</string>
+TEMP_DIR=$(mktemp -d)
+cd ${TEMP_DIR}
+
+cp -r &quot;${APP_PATH}&quot; ${TEMP_DIR}/
+mkdir -p &quot;${APP_NAME}/Frameworks&quot;
+cp -r &quot;${FRAMEWORK_PATH}&quot; &quot;${APP_NAME}/Frameworks&quot;
+
+plutil -replace CFBundleIdentifier -string ${BUNDLE_IDENTIFIER} &quot;${APP_NAME}/Info.plist&quot;
+${INSERT_DYLIB_PATH} --all-yes @executable_path/Frameworks/${FRAMEWORK_EXECUTABLE} &quot;${APP_NAME}/${APP_EXECUTABLE}&quot;
+mv &quot;${APP_NAME}/${APP_EXECUTABLE}_patched&quot; &quot;$APP_NAME/${APP_EXECUTABLE}&quot;
+chmod +x &quot;${APP_NAME}/${APP_EXECUTABLE}&quot;
+
+rm -rf &quot;${APP_NAME}/PlugIns&quot;
+rm -rf &quot;${APP_NAME}/Watch&quot;
+
+rm -rf &quot;${BUILT_PRODUCTS_DIR}/${APP_NAME}&quot;
+mv &quot;${APP_NAME}&quot; ${BUILT_PRODUCTS_DIR}
+rm -rf ${TEMP_DIR}</string>
 				</dict>
 			</array>
 			<key>Dependencies</key>
@@ -150,6 +177,22 @@ insert_dylib --all-yes &quot;@loader_path/${FRAMEWORK_NAME}.framework/${FRAMEWOR
 			<string>text</string>
 			<key>Placeholder</key>
 			<string>AppStore</string>
+			<key>Required</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>Identifier</key>
+			<string>TargetAppBundleId</string>
+			<key>Name</key>
+			<string>Target App Bundle Id:</string>
+			<key>Description</key>
+			<string>Target App Bundle Id.</string>
+			<key>Type</key>
+			<string>text</string>
+			<key>Placeholder</key>
+			<string>com.apple.appStore</string>
+			<key>Required</key>
+			<true/>
 		</dict>
 	</array>
 	<key>Nodes</key>
@@ -159,7 +202,7 @@ insert_dylib --all-yes &quot;@loader_path/${FRAMEWORK_NAME}.framework/${FRAMEWOR
 		<string>___PACKAGENAME___Header.h</string>
 		<string>PrefixHeader.pch</string>
 		<string>../Podfile</string>
-		<string>Info.plist</string>
+		<string>../insert_dylib</string>
 	</array>
 	<key>Definitions</key>
 	<dict>
@@ -172,10 +215,11 @@ insert_dylib --all-yes &quot;@loader_path/${FRAMEWORK_NAME}.framework/${FRAMEWOR
 			<key>Path</key>
 			<string>Podfile</string>
 			<key>Beginning</key>
-			<string>platform :osx, &apos;10.11&apos;
+			<string>platform :ios, &apos;8.0&apos;
 
 target &apos;___PACKAGENAME___&apos; do
 	pod &apos;JRSwizzle&apos;, &apos;~&gt; 1.0&apos;
+	pod &apos;fishhook&apos;, &apos;~&gt; 0.2&apos;
 end</string>
 			<key>End</key>
 			<string></string>
@@ -204,14 +248,14 @@ end</string>
 			<key>Path</key>
 			<string>PrefixHeader.pch</string>
 		</dict>
-		<key>Info.plist</key>
+		<key>../insert_dylib</key>
 		<dict>
 			<key>Group</key>
 			<array>
 				<string>Supporting Files</string>
 			</array>
 			<key>Path</key>
-			<string>Info.plist</string>
+			<string>insert_dylib</string>
 		</dict>
 	</dict>
 </dict>
