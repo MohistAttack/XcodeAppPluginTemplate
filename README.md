@@ -13,7 +13,7 @@ App Plugin Project Template For iOS App and Mac App.
 
 ## 如何安装
 
-* 将 `App Plugin` 文件夹拷贝到 `~/Library/Developer/Xcode/Templates/Project Templates`.
+* 将 `App Plugin.xctemplate` 文件夹拷贝到 `~/Library/Developer/Xcode/Templates/Project Templates`，可能无父级文件夹，自行建立。
 
 ## 如何卸载
 
